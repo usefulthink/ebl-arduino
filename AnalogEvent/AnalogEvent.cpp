@@ -38,7 +38,7 @@ void AnalogEventClass::addAnalogPort(short pin, void (*onChange)(AnalogPortInfor
 	} else {
 		this->ports = (AnalogPortInformation*) malloc(sizeof(AnalogPortInformation));
 	}
-	
+
 	this->setPosition(this->count);
 	this->currentPort->pin = pin;
 	this->currentPort->value = -99; //force the first event change
@@ -56,21 +56,18 @@ void AnalogEventClass::loop() {
 	for (this->index = 0; this->index < this->count; this->index++) {
 		this->setPosition(this->index);
 		this->nextValue = analogRead(this->currentPort->pin);
-		
-		if (this->currentPort->value != this->nextValue) {
-			if (this->currentPort->hysteresis > 0) {
-				if (this->currentPort->value-this->nextValue >= this->currentPort->hysteresis ||
-					this->nextValue-this->currentPort->value >= this->currentPort->hysteresis) {
-						this->currentPort->value = this->nextValue;
-						if (this->currentPort->onChange != NULL)
-							this->currentPort->onChange(this->currentPort); //call event					
-					}
-			} else {
-				this->currentPort->value = this->nextValue;
-				if (this->currentPort->onChange != NULL)
-					this->currentPort->onChange(this->currentPort); //call event
-			}
-		}
+
+        if (this->currentPort->onChange == NULL) { return; } // nobody cares, so why bother
+		if (this->currentPort->value == this->nextValue) { return; } // unchanged value
+
+        if (this->currentPort->hysteresis > 0) {
+            if (abs(this->currentPort->value-this->nextValue) < this->currentPort->hysteresis) {
+                return;
+            }
+        }
+
+        this->currentPort->value = this->nextValue;
+        this->currentPort->onChange(this->currentPort); //call event
 	}
 }
 
